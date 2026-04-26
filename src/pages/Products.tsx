@@ -63,7 +63,7 @@ const Products: React.FC = () => {
     createProduct.mutate({
       data: {
         ...formData,
-        price: parseFloat(formData.price) * 1.1,
+        price: parseFloat(formData.price),
       },
     });
   };
