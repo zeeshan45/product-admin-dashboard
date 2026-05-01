@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Products from './Products';
 import * as endpoints from '../api/generated/endpoints';
@@ -30,5 +30,38 @@ describe('Products Page', () => {
         expect(screen.getByText('Products')).toBeInTheDocument();
         expect(screen.getByTestId('add-product-button')).toBeInTheDocument();
         expect(screen.getByText('Awesome Product')).toBeInTheDocument();
+    });
+
+    it('shows validation error when trying to add a product with empty fields', () => {
+        vi.mocked(endpoints.useGetProducts).mockReturnValue({
+            data: { data: [] },
+            isLoading: false,
+            error: null,
+        } as any);
+
+        render(
+            <QueryClientProvider client={queryClient}>
+                <Products />
+            </QueryClientProvider>
+        );
+
+        // Open the dialog
+        fireEvent.click(screen.getByTestId('add-product-button'));
+
+        // Check if dialog is open
+        expect(screen.getByText('Add New Product')).toBeInTheDocument();
+
+        // Try to save without filling anything
+        fireEvent.click(screen.getByTestId('save-product-button'));
+
+        // Since it's inside a form with onSubmit, we might need to manually fire submit 
+        // if fireEvent.click doesn't trigger it (due to required fields in jsdom)
+        // But usually testing-library `fireEvent.submit` works best for forms.
+        // Let's just check if the error is displayed.
+        // The error text is "Please fill in all required fields"
+        expect(screen.getByText('Please fill in all required fields')).toBeInTheDocument();
+        
+        // Ensure mutate was not called
+        expect(endpoints.usePostProducts().mutate).not.toHaveBeenCalled();
     });
 });
